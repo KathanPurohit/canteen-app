@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canteen Foody Bite</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 414px;
+            margin: 0 auto;
+            background-color: white;
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 60px; /* Space for bottom nav */
+        }
+        .header {
+            background-color: #ffffff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+        .search-bar {
+            margin-top: 15px;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            box-sizing: border-box;
+        }
+        .restaurant-card {
+            background-color: #f9f9f9;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+        }
+        .restaurant-card h2 {
+            margin: 0;
+            color: #4CAF50;
+            font-size: 20px;
+        }
+        .compose-meal-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .menu-tabs {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 20px;
+            background-color: #fff;
+        }
+        .menu-tab {
+            padding: 10px 20px;
+            margin-right: 10px;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .menu-tab.active {
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+        }
+        .menu-items {
+            padding: 20px;
+        }
+        .menu-item {
+            display: flex;
+            margin-bottom: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .menu-item-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+        }
+        .menu-item-details {
+            padding: 10px;
+            flex-grow: 1;
+        }
+        .menu-item-name {
+            font-weight: bold;
+            margin: 0;
+        }
+        .menu-item-description {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        .menu-item-price {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .add-item-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #auth-container, #app-container {
+            padding: 20px;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 414px;
+        }
+        .nav-item {
+            text-align: center;
+            color: #666;
+        }
+        .nav-item.active {
+            color: #4CAF50;
+        }
+        #cart-container {
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff;
+            width: 100%;
+            max-width: 414px;
+            padding: 20px;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="auth-container">
+            <h2>Authentication</h2>
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button id="signUpBtn">Sign Up</button>
+            <button id="signInBtn">Sign In</button>
+        </div>
+
+        <div id="app-container" style="display: none;">
+            <div class="header">
+                <h1>Dashboard</h1>
+                <input type="text" class="search-bar" placeholder="Search">
+            </div>
+            
+            <div class="restaurant-card">
+                <h2>Canteen Foody Bite</h2>
+                <button class="compose-meal-btn">Compose your own meal</button>
+            </div>
+            
+            <div class="menu-tabs">
+                <div class="menu-tab active" data-category="Main">Main dishes</div>
+                <div class="menu-tab" data-category="Vegetarian">Vegetarian</div>
+                <div class="menu-tab" data-category="Soup">Soup</div>
+                <div class="menu-tab" data-category="Salad">Salad</div>
+                <div class="menu-tab" data-category="Side">Side</div>
+            </div>
+            
+            <div class="menu-items" id="menu-items">
+                <!-- Menu items will be dynamically added here -->
+            </div>
+        </div>
+
+        <div id="cart-container">
+            <h3>Your Cart</h3>
+            <div id="cart-items"></div>
+            <p>Total: $<span id="cart-total">0.00</span></p>
+            <button id="place-order-btn">Place Order</button>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active">Your meal</div>
+            <div class="nav-item">My order</div>
+            <div class="nav-item">Favourite</div>
+            <div class="nav-item">Profile</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+        
+        const SUPABASE_URL = 'https://mhvuwfhevwpdihokwayp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1odnV3ZmhldndwZGlob2t3YXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjA3MTQ4MzMsImV4cCI6MjAzNjI5MDgzM30.PvX3YQeqbOjzaph_hXFfZrfGJdwxJKR-ISzzsZanMjg';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let menuItems = [];
+        let cart = [];
+
+        // Authentication functions
+        async function signUp() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const { user, error } = await supabase.auth.signUp({ email, password });
+            if (error) alert(error.message);
+            else alert('Sign up successful! Please check your email for verification.');
+        }
+
+        async function signIn() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const { user, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) alert(error.message);
+            else {
+                currentUser = user;
+                document.getElementById('auth-container').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                loadMenuItems();
+            }
+        }
+
+        document.getElementById('signUpBtn').addEventListener('click', signUp);
+        document.getElementById('signInBtn').addEventListener('click', signIn);
+
+        // Menu functions
+        async function loadMenuItems() {
+            const { data, error } = await supabase.from('menu_items').select('*');
+            if (error) alert(error.message);
+            else {
+                menuItems = data;
+                displayMenuItems('Main'); // Default to Main dishes
+            }
+        }
+
+        function displayMenuItems(category) {
+            const menuContainer = document.getElementById('menu-items');
+            menuContainer.innerHTML = '';
+            menuItems.filter(item => item.category === category).forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'menu-item';
+                itemElement.innerHTML = `
+                    <img src="${item.image_url || 'placeholder.jpg'}" alt="${item.name}" class="menu-item-image">
+                    <div class="menu-item-details">
+                        <h3 class="menu-item-name">${item.name}</h3>
+                        <p class="menu-item-description">${item.description}</p>
+                        <p class="menu-item-price">$${item.price.toFixed(2)}</p>
+                        <button class="add-item-btn" data-id="${item.id}">Add to Order</button>
+                    </div>
+                `;
+                menuContainer.appendChild(itemElement);
+            });
+            attachAddToCartListeners();
+        }
+
+        function attachAddToCartListeners() {
+            document.querySelectorAll('.add-item-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const itemId = e.target.getAttribute('data-id');
+                    addToCart(itemId);
+                });
+            });
+        }
+
+        // Cart functions
+        function addToCart(itemId) {
+            const item = menuItems.find(i => i.id.toString() === itemId);
+            if (item) {
+                cart.push(item);
+                updateCartDisplay();
+            }
+        }
+
+        function updateCartDisplay() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            cartItemsContainer.innerHTML = '';
+            cart.forEach((item, index) => {
+                const itemElement = document.createElement('div');
+                itemElement.innerHTML = `
+                    ${item.name} - $${item.price.toFixed(2)}
+                    <button onclick="removeFromCart(${index})">Remove</button>
+                `;
+                cartItemsContainer.appendChild(itemElement);
+            });
+            updateCartTotal();
+            document.getElementById('cart-container').style.display = 'block';
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartDisplay();
+        }
+
+        function updateCartTotal() {
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            document.getElementById('cart-total').textContent = total.toFixed(2);
+        }
+
+        // Order placement
+        async function placeOrder() {
+            if (!currentUser) {
+                alert('Please sign in to place an order.');
+                return;
+            }
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            
+            // Create order
+            const { data: order, error: orderError } = await supabase
+                .from('orders')
+                .insert({ user_id: currentUser.id, total_amount: total })
+                .select()
+                .single();
+
+            if (orderError) {
+                alert('Error creating order: ' + orderError.message);
+                return;
+            }
+
+            // Create order items
+            const orderItems = cart.map(item => ({
+                order_id: order.id,
+                menu_item_id: item.id,
+                quantity: 1,
+                price_per_unit: item.price,
+                subtotal: item.price
+            }));
+
+            const { error: itemsError } = await supabase
+                .from('order_items')
+                .insert(orderItems);
+
+            if (itemsError) {
+                alert('Error adding order items: ' + itemsError.message);
+                return;
+            }
+
+            alert('Order placed successfully!');
+            cart = [];
+            updateCartDisplay();
+        }
+
+        document.getElementById('place-order-btn').addEventListener('click', placeOrder);
+
+        // Menu tab functionality
+        document.querySelectorAll('.menu-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelector('.menu-tab.active').classList.remove('active');
+                e.target.classList.add('active');
+                displayMenuItems(e.target.getAttribute('data-category'));
+            });
+        });
+
+        // Check if user is already signed in
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                currentUser = session.user;
+                document.getElementById('auth-container').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                loadMenuItems();
+            }
+        });
+
+        // Make removeFromCart function global so it can be called from inline event handlers
+        window.removeFromCart = removeFromCart;
+    </script>
+</body>
+</html>
